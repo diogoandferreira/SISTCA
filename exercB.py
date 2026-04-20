@@ -22,6 +22,8 @@ led_cold = Pin(X, Pin.OUT)
 led_normal = Pin(Y, Pin.OUT)
 LED_hot = Pin(Z, Pin.OUT)
 
+ 
+
 T_MIN = 10.0
 T_NORMAL = 26.5
 T_MAX = 37.0
@@ -69,10 +71,15 @@ while True:
     sensor.measure() 
     temp = sensor.temperature()
 
+    #iniciar os leds desligados
+    led_cold.off()
+    led_normal.off()
+    LED_hot.off()  
+
     if temp < T_MIN:
         led_cold.on()
 
-    elif temp > T_MIN & temp < T_MAX:
+    elif temp > T_MIN and temp < T_MAX:
         led_normal.on()
 
     else:
