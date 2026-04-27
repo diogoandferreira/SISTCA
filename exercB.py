@@ -18,9 +18,9 @@ TOPIC = b"v1/devices/me/telemetry"
 
 sensor = dht.DHT22(Pin(15)) 	#if you choose another GPIO pin, change his number here
 
-led_cold = Pin(X, Pin.OUT)      #choose a GPIO pin for the LED'S and change the number
-led_normal = Pin(Y, Pin.OUT)
-LED_hot = Pin(Z, Pin.OUT)
+led_cold = Pin(2, Pin.OUT)      #choose a GPIO pin for the LED'S and change the number
+led_normal = Pin(4, Pin.OUT)
+LED_hot = Pin(5, Pin.OUT)
 
 T_MIN = 10.0
 T_NORMAL = 26.5

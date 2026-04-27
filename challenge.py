@@ -4,7 +4,6 @@ import network, time, dht, ujson
 from machine import Pin 
 
 from umqtt.simple import MQTTClient 
-
   
 
 HOST  = "mqtt.thingsboard.cloud" 
@@ -18,7 +17,7 @@ TOPIC = b"v1/devices/me/telemetry"
 
 sensor = dht.DHT22(Pin(15)) 	#if you choose another GPIO pin, change his number here
 
-fan = Pin(X, Pin.OUT)           #choose a GPIO pin for the LED'S and change the number
+fan = Pin(2, Pin.OUT)           #choose a GPIO pin for the LED'S and change the number
 fan.off()
 temp_high = 30.0
 # Connect to Wi-Fi 
