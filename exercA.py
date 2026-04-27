@@ -1,98 +1,67 @@
-import network, time, dht, ujson 
+import network, time, dht, ujson
+from machine import Pin
+from umqtt.simple import MQTTClient
 
-from machine import Pin 
+# Configurações
+HOST = "mqtt.thingsboard.cloud"
+PORT = 1883
+TOKEN = "FhpTcpxIqdAZgF1MvqA3"
+TOPIC = b"v1/devices/me/telemetry"
 
-from umqtt.simple import MQTTClient 
+# Hardware
+sensor = dht.DHT22(Pin(15))
+led_alarme = Pin(14, Pin.OUT) # O LED que vai simular o alerta
 
-  
+# WiFi
+sta = network.WLAN(network.STA_IF)
+sta.active(True)
+sta.connect('Wokwi-GUEST', '')
+while not sta.isconnected():
+    time.sleep(0.5)
+print("WiFi OK!")
 
-HOST  = "mqtt.thingsboard.cloud" 
+# MQTT Setup
+client = MQTTClient(
+    client_id="esp32_tb_01",
+    server=HOST,
+    port=PORT,
+    user=TOKEN,
+    password="",
+    keepalive=60
+)
 
-PORT  = 1883 
+client.connect()
+print("MQTT ligado ao ThingsBoard!")
 
-TOKEN = "YOUR_ACCESS_TOKEN_HERE" 
+while True:
+    try:
+        sensor.measure()
+        temp = sensor.temperature()
+        hum = sensor.humidity()
 
-TOPIC = b"v1/devices/me/telemetry" 
+        # --- Lógica do Exercício: Alerta de Temperatura ---
+        if temp > 30:
+            led_alarme.value(1)  # Acende o LED no Wokwi
+            status = "ALERTA"
+        else:
+            led_alarme.value(0)  # Apaga o LED
+            status = "NORMAL"
+        
+        # Enviamos a temperatura, humidade e o status do alarme
+        payload = ujson.dumps({
+            "temperature": temp,
+            "humidity": hum,
+            "alarmStatus": status
+        })
+        
+        client.publish(TOPIC, payload)
+        print("Enviado:", payload)
 
-  
-
-sensor = dht.DHT22(Pin(15)) 	#if you choose another GPIO pin, change his number here
-
-led_cold = Pin(X, Pin.OUT)
-led_normal = Pin(Y, Pin.OUT)
-LED_hot = Pin(Z, Pin.OUT)
-
- 
-
-T_MIN = 10.0
-T_NORMAL = 26.5
-T_MAX = 37.0
-
-# Connect to Wi-Fi 
-
-sta = network.WLAN(network.STA_IF) 
-
-sta.active(True) 
-
-sta.connect("Wokwi-GUEST", "") 
-
-while not sta.isconnected(): 
-
-    time.sleep(0.5) 
-
-print("WiFi OK!") 
-  
-
-# Connect via MQTT 
-
-client = MQTTClient( 
-
-    client_id="esp32_tb", 
-
-    server=HOST, port=PORT, 
-
-    user=TOKEN, password="", 
-
-    keepalive=60 
-
-) 
-
-client.connect() 
-
-print("MQTT connected!") 
-
-  
-
-# Main loop — publish every 10 seconds 
-
-while True: 
-
-    sensor.measure() 
-    temp = sensor.temperature()
-
-    #iniciar os leds desligados
-    led_cold.off()
-    led_normal.off()
-    LED_hot.off()  
-
-    if temp < T_MIN:
-        led_cold.on()
-
-    elif temp > T_MIN and temp < T_MAX:
-        led_normal.on()
-
-    else:
-        LED_hot.on()
-
-    payload = ujson.dumps({ 
-
-        "temperature": sensor.temperature(), 
-
-        "humidity":    sensor.humidity() 
-    }) 
-
-    client.publish(TOPIC, payload) 
-
-    print("Sent:", payload) 
-
-    time.sleep(3) 
+    except Exception as e:
+        print("Erro:", e)
+        try:
+            client.connect()
+        except:
+            pass
+            
+    time.sleep(3) # Intervalo de 3 segundos entre envios
