@@ -70,7 +70,7 @@ while True:
 
     if sensor.temperature() > temp_high:
         fan.on()
-    else
+    else:
         fan.off()
 
 
