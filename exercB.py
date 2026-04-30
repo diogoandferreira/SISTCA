@@ -1,92 +1,46 @@
-import network, time, dht, ujson 
+import network
+import time
+import ujson
+from machine import Pin
+from umqtt.simple import MQTTClient
 
-from machine import Pin 
+# --- CONFIGURAÇÃO ---
+TOKEN = "FhpTcpxIqdAZgF1MvqA3"  # Substitui pelo teu Access Token
+HOST = "mqtt.thingsboard.cloud"
 
-from umqtt.simple import MQTTClient 
+# Pino do LED
+led = Pin(14, Pin.OUT)
 
-  
+# --- FUNÇÃO QUE LIGA O LED ---
+def processar_comando(topic, msg):
+    # Quando carregas no botão, o ThingsBoard envia uma mensagem JSON
+    dados = ujson.loads(msg)
+    
+    # Se o método for 'setLedStatus', mudamos o LED
+    if dados['method'] == 'setLedStatus':
+        valor_do_botao = dados['params'] # Recebe True ou False
+        if valor_do_botao == True:
+            led.value(1)  # Liga o LED
+            print("Botão do Dashboard: LIGADO")
+        else:
+            led.value(0)  # Desliga o LED
+            print("Botão do Dashboard: DESLIGADO")
 
-HOST  = "mqtt.thingsboard.cloud" 
+# --- CONEXÃO ---
+sta_if = network.WLAN(network.STA_IF)
+sta_if.active(True)
+sta_if.connect('Wokwi-GUEST', '')
+while not sta_if.isconnected(): pass
 
-PORT  = 1883 
+client = MQTTClient("esp32_botao", HOST, user=TOKEN, password="")
+client.set_callback(processar_comando)
+client.connect()
 
-TOKEN = "YOUR_ACCESS_TOKEN_HERE" 
+# SUBSCREVER (Diz ao ESP32 para ouvir os comandos)
+client.subscribe(b"v1/devices/me/rpc/request/+")
+print("Sistema pronto! Carrega no botão do Dashboard.")
 
-TOPIC = b"v1/devices/me/telemetry" 
-
-  
-
-sensor = dht.DHT22(Pin(15)) 	#if you choose another GPIO pin, change his number here
-
-led_cold = Pin(2, Pin.OUT)      #choose a GPIO pin for the LED'S and change the number
-led_normal = Pin(4, Pin.OUT)
-LED_hot = Pin(5, Pin.OUT)
-
-T_MIN = 10.0
-T_NORMAL = 26.5
-T_MAX = 37.0
-  
-
-# Connect to Wi-Fi 
-
-sta = network.WLAN(network.STA_IF) 
-
-sta.active(True) 
-
-sta.connect("Wokwi-GUEST", "") 
-
-while not sta.isconnected(): 
-
-    time.sleep(0.5) 
-
-print("WiFi OK!") 
-  
-
-# Connect via MQTT 
-
-client = MQTTClient( 
-
-    client_id="esp32_tb", 
-
-    server=HOST, port=PORT, 
-
-    user=TOKEN, password="", 
-
-    keepalive=60 
-
-) 
-
-client.connect() 
-
-print("MQTT connected!") 
-
-  
-
-# Main loop — publish every 10 seconds 
-
-while True: 
-
-    sensor.measure() 
-    temp = sensor.temperature()
-
-    if temp < T_MIN:
-        led_cold.on()
-
-    elif temp > T_MIN & temp < T_MAX:
-        led_normal.on()
-
-    else:
-        LED_hot.on()
-
-    payload = ujson.dumps({ 
-
-        "temperature": sensor.temperature(), 
-
-        "humidity":    sensor.humidity() 
-    }) 
-
-    client.publish(TOPIC, payload) 
-
-    print("Sent:", payload) 
-
-    time.sleep(3) 
+while True:
+    # Verifica se o botão foi pressionado no site
+    client.check_msg()
+    time.sleep(0.2)

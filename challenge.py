@@ -12,8 +12,7 @@ PORT  = 1883
 
 TOKEN = "YOUR_ACCESS_TOKEN_HERE" 
 
-TOPIC = b"v1/devices/me/telemetry" 
-  
+TOPIC = b"v1/devices/me/telemetry"   
 
 sensor = dht.DHT22(Pin(15)) 	#if you choose another GPIO pin, change his number here
 
